@@ -35,6 +35,11 @@ app.use(passport.initialize()); // initialize the middleware, makes sure it does
 app.use(passport.session()); // allows passport to plug into sessions table
 
 app.use("/", require("./routes"));
+app.use("/sell", require("./routes/sell.js"));
+app.use("/bike", require("./routes/bike.js"));
+
+// Serve photos from the 'photos' directory
+app.use('/bike_photos', express.static(__dirname + '/bike_photos'));
 
 const port = process.env.PORT || 3001;
 

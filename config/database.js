@@ -1,4 +1,5 @@
-const mysql = require("mysql");
+const mysql = require("mysql2");
+// const mysql = require("mysql2/promise");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
 require("dotenv").config();
@@ -29,12 +30,17 @@ const dbOptions = {
   schema: {
     tableName: "TBL_SESSION",
   },
+  multipleStatements: true
 };
 
 const pool = mysql.createPool(dbOptions);
+const promisePool = pool.promise()
 const sessionStore = new MySQLStore(dbOptions, pool);
+
+
 
 module.exports = {
   pool,
+  promisePool,
   sessionStore,
 };

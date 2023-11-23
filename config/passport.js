@@ -21,7 +21,6 @@ const strategy = new LocalStrategy(
       pool.query(sql, values, (err, rows) => {
         if (err) throw err;
         if (!rows[0]) return done(null, false);
-        console.log(rows);
 
         const isValid = validatePassword(password, rows[0].HASH, rows[0].SALT);
 
@@ -54,11 +53,8 @@ passport.deserializeUser((userId, done) => {
       WHERE ID = ?`;
   const values = [userId];
 
-  console.log(sql, values);
-
   pool.query(sql, values, (err, result) => {
     if (err) {
-      console.log(err);
       done(err, false, { error: err });
     }
 

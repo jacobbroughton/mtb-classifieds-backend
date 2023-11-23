@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const passport = require("passport");
 const genPassword = require("../lib/passwordUtils").genPassword;
-const pool = require("../config/database").pool;
+const { promisePool } = require("../config/database");
 const isAuth = require("../lib/auth").isAuth;
 const isAdmin = require("../lib/auth").isAdmin;
 
@@ -17,38 +17,30 @@ router.post(
   })
 );
 
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     let sql = `CALL LocalBikeMarket.SP_GET_USER(?)`;
     let values = [req.body.username];
 
-    pool.query(sql, values, (error, result) => {
-      if (error) {
-        console.error(error);
-        res.statusMessage = error.message;
-        res.status(409).end();
-        return;
-      }
+    const [getUserResults] = await promisePool.query(sql, values);
 
-      console.log({result});
+    if (getUserResults[0].length) {
+      res.send({
+        code: 2,
+        message: "User already exists",
+        user: null,
+      });
+      res.statusMessage = "User already exists";
+      res.status(409).end();
+      return;
+    }
 
-      // if (result.length) {
-      //   res.send({
-      //     code: 2,
-      //     message: "User already exists",
-      //     user: null,
-      //   });
-      //   res.statusMessage = "User already exists";
-      //   res.status(409).end();
-      //   return;
-      // }
+    const saltHash = genPassword(req.body.password);
 
-      const saltHash = genPassword(req.body.password);
+    const salt = saltHash.salt;
+    const hash = saltHash.hash;
 
-      const salt = saltHash.salt;
-      const hash = saltHash.hash;
-
-      sql = `
+    sql = `
         INSERT INTO LocalBikeMarket.TBL_USER (
             USERNAME,
             HASH,
@@ -63,17 +55,13 @@ router.post("/register", (req, res) => {
             null
         )
       `;
+    values = [req.body.username, hash, salt];
 
-      // Save the user to the database
-      pool.query(sql, [req.body.username, hash, salt], (error, result, fields) => {
-        if (error) {
-          res.statusMessage = error.message || error.sqlMessage;
-          res.status(409).end();
-          return;
-        }
-        res.send({ result, message: "Successfully registered" });
-      });
-    });
+    // Save the user to the database
+    const [registerUserResults] = await promisePool.query(sql, values);
+    console.log(registerUserResults);
+
+    res.send({ message: "Successfully registered" });
   } catch (error) {
     console.log(error);
   }
