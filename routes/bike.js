@@ -2,8 +2,16 @@ const router = require("express").Router();
 const { promisePool } = require("../config/database");
 const isAuth = require("../lib/auth").isAuth;
 
-router.get("/", (req, res) => {
-  res.json({ success: true, message: "You got all the bikes" });
+router.get("/all", async (req, res) => {
+  const sql = `CALL LocalBikeMarket.SP_GET_BIKES()`;
+
+  const [results] = await promisePool.query(sql);
+
+  res.json({
+    success: true,
+    bikes: results[0],
+    message: "Successfully fetched bikes",
+  });
 });
 
 router.get("/:bikeID", async (req, res) => {
@@ -16,7 +24,7 @@ router.get("/:bikeID", async (req, res) => {
     success: true,
     bike: {
       info: bikeResults[0][0],
-      photos: bikeResults[1]
+      photos: bikeResults[1],
     },
     message: `Successfully fetched bike ${req.params.bikeID}`,
   });
